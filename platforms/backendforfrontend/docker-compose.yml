@@ -1,0 +1,11 @@
+services:
+  server:
+    container_name: playable-server
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - ./public:/app/public
+    restart: unless-stopped

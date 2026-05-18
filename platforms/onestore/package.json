@@ -1,0 +1,20 @@
+{
+	"name": "playablegames-template-onestore",
+	"private": true,
+	"version": "0.0.0",
+	"scripts": {
+		"validate": "node tools/validate.cjs",
+		"stage": "npm run validate && node ../../libs/vanilla.js/tools/project.cjs stage --source ../../build/web --destination www",
+		"sync": "npm run stage && cap sync android",
+		"open": "cap open android",
+		"build:aab": "node tools/buildaab.cjs",
+		"build:apk": "node tools/buildapk.cjs"
+	},
+	"devDependencies": {
+		"@capacitor/cli": "^6.1.2"
+	},
+	"dependencies": {
+		"@capacitor/android": "^6.1.2",
+		"@capacitor/core": "^6.1.2"
+	}
+}

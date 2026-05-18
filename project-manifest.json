@@ -1,0 +1,11 @@
+{
+	"appintoss": {
+		"appName": "com.ddukbaek2.playable.template",
+		"displayName": "playablegames-template",
+		"icon": "./icons/icon.png"
+	},
+	"onestore": {
+		"appId": "com.ddukbaek2.playable.template",
+		"appName": "playablegames-template"
+	}
+}

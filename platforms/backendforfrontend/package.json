@@ -1,0 +1,16 @@
+{
+	"name": "playablegames-template-backendforfrontend",
+	"version": "1.0.0",
+	"description": "BFF (Express + WebSocket) 서버 플랫폼",
+	"main": "app.js",
+	"scripts": {
+		"stage": "node ../../libs/vanilla.js/tools/project.cjs stage --source ../../build/web --destination public",
+		"start": "node --env-file-if-exists=.env app.js",
+		"dev": "npm run stage && node --env-file-if-exists=.env app.js"
+	},
+	"type": "commonjs",
+	"dependencies": {
+		"express": "^5.2.1",
+		"ws": "^8.20.0"
+	}
+}

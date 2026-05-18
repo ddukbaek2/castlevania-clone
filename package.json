@@ -1,0 +1,42 @@
+{
+	"name": "playablegames-template",
+	"version": "1.0.0",
+	"description": "플레이어블 게임 단일 프로젝트 템플릿",
+	"main": "src/main.js",
+	"scripts": {
+		"postinstall": "git submodule update --init --recursive && npm install --prefix platforms/appintoss && npm install --prefix platforms/onestore && npm install --prefix platforms/backendforfrontend",
+		"install:all": "git submodule update --init --recursive && npm install && npm install --prefix platforms/appintoss && npm install --prefix platforms/onestore && npm install --prefix platforms/backendforfrontend",
+		"build": "node libs/vanilla.js/tools/project.cjs build --script src/main.js --input . --output build/web",
+		"check": "node libs/vanilla.js/tools/project.cjs check --input .",
+		"atlas": "node libs/vanilla.js/tools/atlas.cjs",
+		"webm": "node libs/vanilla.js/tools/webm.cjs",
+		"mangle": "node libs/vanilla.js/tools/mangle.cjs",
+		"stage:ait": "node tools/manifest.cjs appintoss platforms/appintoss/granite.config.ts -- npm run stage --prefix platforms/appintoss",
+		"dev:ait": "node tools/manifest.cjs appintoss platforms/appintoss/granite.config.ts -- npm run dev --prefix platforms/appintoss",
+		"build:ait": "node tools/manifest.cjs appintoss platforms/appintoss/granite.config.ts -- npm run build --prefix platforms/appintoss",
+		"stage:onestore": "node tools/manifest.cjs onestore platforms/onestore/capacitor.config.json -- npm run stage --prefix platforms/onestore",
+		"sync:onestore": "node tools/manifest.cjs onestore platforms/onestore/capacitor.config.json -- npm run sync --prefix platforms/onestore",
+		"open:onestore": "node tools/manifest.cjs onestore platforms/onestore/capacitor.config.json -- npm run open --prefix platforms/onestore",
+		"build:aab:onestore": "node tools/manifest.cjs onestore platforms/onestore/capacitor.config.json -- npm run build:aab --prefix platforms/onestore",
+		"build:apk:onestore": "node tools/manifest.cjs onestore platforms/onestore/capacitor.config.json -- npm run build:apk --prefix platforms/onestore",
+		"stage:bff": "npm run stage --prefix platforms/backendforfrontend",
+		"start:bff": "npm run start --prefix platforms/backendforfrontend",
+		"dev:bff": "npm run dev --prefix platforms/backendforfrontend"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ddukbaek2/playablegames-template.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"devDependencies": {
+		"esbuild": "^0.24.0",
+		"ffmpeg-static": "^5.3.0",
+		"fluent-ffmpeg": "^2.1.3"
+	},
+	"dependencies": {
+		"canvas": "^3.2.3"
+	}
+}
