@@ -4,54 +4,80 @@
 const System = globalThis;
 import { Vector2 } from "../libs/vanilla.js/src/base/vector2.js";
 import { Rect } from "../libs/vanilla.js/src/base/rect.js";
-import { Colors } from "../libs/vanilla.js/src/base/colors.js";
+import { Color } from "../libs/vanilla.js/src/base/color.js";
 import { Engine, EngineConfiguration } from "../libs/vanilla.js/src/core/engine.js";
 import { Graphic } from "../libs/vanilla.js/src/core/graphic.js";
-import { Scene } from "../libs/vanilla.js/src/core/scene.js";
 import { ViewScaleMode } from "../libs/vanilla.js/src/core/viewmanager.js";
+import { GameScene } from "../libs/vanilla.js/src/game/gamescene.js";
 
 
 //==============================================================================
-// 기본 씬.
+// 메인 씬.
 //==============================================================================
-class MainScene extends Scene {
+class MainScene extends GameScene {
+	//==============================================================================
+	// 생성자.
+	//==============================================================================
+	constructor() {
+		super();
+		this.setViewScaleMode(ViewScaleMode.none);
+		this.setSceneBackgroundColor(Color.black());
+		this.setLoadingMinDurationMs(0);
+	}
+
+	//==============================================================================
+	// 자산 로드 hook.
+	//==============================================================================
+	/**
+	 * @override
+	 */
+	async loadAssets() {
+		await super.loadAssets();
+	}
+
 	//==============================================================================
 	// 초기화.
 	//==============================================================================
 	/**
+	 * @override
 	 * @param { Engine } engine
 	 */
 	initialize(engine) {
 		super.initialize(engine);
+	}
 
-		const viewManager = engine.getViewManager();
-		viewManager.setViewScaleMode(ViewScaleMode.stretchHeight);
+	//==============================================================================
+	// 레이아웃.
+	//==============================================================================
+	/**
+	 * @override
+	 */
+	layout() {
+		super.layout();
 	}
 
 	//==============================================================================
 	// 출력.
 	//==============================================================================
 	/**
+	 * @override
 	 * @param { Graphic } graphic
 	 */
 	draw(graphic) {
-		super.draw(graphic);
-
 		const engine = this.getEngine();
 		const canvasRenderingContext = graphic.getCanvasRenderingContext();
 		const viewManager = engine.getViewManager();
-		const canvasNativeSize = viewManager.getCanvasNativeSize();
 		const viewSize = viewManager.getViewSize();
 
-		// 전체 화면 칠하기.
 		viewManager.applyCanvasNativeRect(canvasRenderingContext);
-		canvasRenderingContext.fillStyle = Colors.darkVanilla;
-		graphic.drawRect(Rect.create(0, 0, canvasNativeSize.x, canvasNativeSize.y));
+		graphic.setFillColor(Color.createFromHEX("#000000"));
 
 		// 게임 영역 칠하기.
 		viewManager.applyViewRect(canvasRenderingContext);
-		canvasRenderingContext.fillStyle = Colors.lightVanilla;
-		graphic.drawRect(Rect.create(0, 0, viewSize.x, viewSize.y));
+		graphic.setFillColor(Color.createFromHEX("#ffffff"));
+		graphic.drawRect(Rect.create(0, 0, 256, 240));
+
+		super.draw(graphic);
 	}
 }
 
@@ -60,9 +86,9 @@ class MainScene extends Scene {
 // 엔진 기동.
 //==============================================================================
 const engineConfiguration = new EngineConfiguration();
-engineConfiguration.referenceResolutionSize = Vector2.create(800, 1280);
+engineConfiguration.referenceResolutionSize = Vector2.create(256 * 5, 240 * 5);
 engineConfiguration.useStatistics = false;
 const engine = new Engine(engineConfiguration);
-document.title = "playablegames-template";
+document.title = "castlevania-clone";
 const scene = new MainScene();
 engine.run(scene);
