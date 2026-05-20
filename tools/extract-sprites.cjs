@@ -34,6 +34,8 @@ function parseArguments(argv) {
 		console.log("  --col-gap <N>           새 프레임으로 인정할 빈 열 수 (기본: 0)");
 		console.log("  --max-y <N>             이 Y 좌표 이상은 행 검출 안 함 (기본: 이미지 높이)");
 		console.log("  --absorb-margin <N>     미소유 CC bbox 와 프레임 bbox 사이 허용 갭(px) (기본: 16)");
+		console.log("  --base <path>           letterbox 베이스로 쓸 별도 PNG (기본: 입력과 동일)");
+		console.log("  --post-min-area <N>     primary CC 적용 후 최소 면적 (기본: 80)");
 		console.log("  --min-row-pixels <N>    한 줄에서 이 픽셀 수 이상이어야 채워진 줄로 인정 (기본: 3)");
 		console.log("  --min-col-pixels <N>    한 열에서 이 픽셀 수 이상이어야 채워진 열로 인정 (기본: 2)");
 		console.log("  --max-row-height <N>    행 높이가 이 값을 넘으면 골짜기 탐지로 재분할 시도 (기본: 80)");
@@ -55,6 +57,8 @@ function parseArguments(argv) {
 		minColPixels: 2,
 		maxY: Number.POSITIVE_INFINITY,
 		absorbMargin: 16,
+		base: null,
+		postMinArea: 80,
 		maxRowHeight: 80,
 		valleyRatio: 0.4,
 		minHeight: 15,
@@ -71,6 +75,8 @@ function parseArguments(argv) {
 		else if (arg === "--col-gap") options.colGap = parseInt(args[++i], 10);
 		else if (arg === "--max-y") options.maxY = parseInt(args[++i], 10);
 		else if (arg === "--absorb-margin") options.absorbMargin = parseInt(args[++i], 10);
+		else if (arg === "--base") options.base = args[++i];
+		else if (arg === "--post-min-area") options.postMinArea = parseInt(args[++i], 10);
 		else if (arg === "--min-row-pixels") options.minRowPixels = parseInt(args[++i], 10);
 		else if (arg === "--min-col-pixels") options.minColPixels = parseInt(args[++i], 10);
 		else if (arg === "--max-row-height") options.maxRowHeight = parseInt(args[++i], 10);
@@ -333,7 +339,13 @@ async function main() {
 
 	// 배경색.
 	const bgR = pixels[0], bgG = pixels[1], bgB = pixels[2];
-	console.log(`[ExtractSprites] 배경색: rgb(${bgR}, ${bgG}, ${bgB})`);
+	const bgA = pixels[3];
+	const alphaIsKey = bgA === 0; // (0,0) 픽셀의 알파가 0이면 알파만으로 bg 판정.
+	if (alphaIsKey) {
+		console.log(`[ExtractSprites] 배경: 알파=0 (알파 기반 마스킹)`);
+	} else {
+		console.log(`[ExtractSprites] 배경색: rgb(${bgR}, ${bgG}, ${bgB})`);
+	}
 
 	// 마스크.
 	const mask = new Uint8Array(width * height);
@@ -341,8 +353,13 @@ async function main() {
 		for (let x = 0; x < width; x++) {
 			const p = (y * width + x) * 4;
 			const r = pixels[p], g = pixels[p + 1], b = pixels[p + 2], a = pixels[p + 3];
-			if (a > 0 && !isBackgroundPixel(r, g, b, bgR, bgG, bgB, options.bgTolerance)) {
-				mask[y * width + x] = 1;
+			if (alphaIsKey) {
+				// 알파 기반: 알파 > 0 이면 sprite (내부 검정/어두운 픽셀 모두 보존).
+				if (a > 0) mask[y * width + x] = 1;
+			} else {
+				if (a > 0 && !isBackgroundPixel(r, g, b, bgR, bgG, bgB, options.bgTolerance)) {
+					mask[y * width + x] = 1;
+				}
 			}
 		}
 	}
@@ -595,6 +612,18 @@ async function main() {
 		delete f._initialX2; delete f._initialY2; delete f._primaryCc;
 	}
 
+	// 6) Primary CC 적용 후 너무 작아진 프레임 제거 (단일 픽셀 잔상 등).
+	let removedTinyCount = 0;
+	for (let r = 0; r < allRows.length; r++) {
+		const row = allRows[r];
+		const before = row.frames.length;
+		row.frames = row.frames.filter((f) => f.width * f.height >= options.postMinArea);
+		removedTinyCount += before - row.frames.length;
+	}
+	if (removedTinyCount > 0) {
+		console.log(`[ExtractSprites] Primary CC 후 ${removedTinyCount} 개 작은 프레임 제거 (post-min-area=${options.postMinArea})`);
+	}
+
 	// 전역 ID 부여 (행 우선, 열 차순).
 	let totalFrames = 0;
 	let maxFrameWidth = 0;
@@ -662,7 +691,7 @@ async function main() {
 	fs.writeFileSync(outputJsonPath, JSON.stringify(jsonOutput, null, "\t"));
 	console.log(`[ExtractSprites] JSON 저장: ${outputJsonPath}`);
 
-	// Letterbox PNG: 원본 이미지 위에 bbox + 프레임 ID 라벨만 오버레이.
+	// Letterbox PNG: base 이미지(별도 지정 가능) 위에 bbox + 프레임 ID 라벨만 오버레이.
 	{
 		const letterboxCanvas = createCanvas(width, height);
 		const ctx = letterboxCanvas.getContext("2d");
@@ -671,7 +700,8 @@ async function main() {
 		ctx.quality = "fast";
 		ctx.patternQuality = "fast";
 		ctx.textDrawingMode = "glyph";
-		ctx.drawImage(image, 0, 0);
+		const baseImage = options.base ? await loadImage(path.resolve(options.base)) : image;
+		ctx.drawImage(baseImage, 0, 0);
 
 		ctx.lineWidth = 1;
 		ctx.font = "bold 8px monospace";

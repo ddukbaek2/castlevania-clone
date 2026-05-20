@@ -40,6 +40,27 @@ export class Actor extends WorldNode {
 	}
 
 	//==============================================================================
+	// 갱신: 애니메이션 진행 + 현재 프레임을 스프라이트에 반영.
+	//==============================================================================
+	/**
+	 * @override
+	 * @param { number } timeDelta
+	 */
+	tick(timeDelta) {
+		this.#animation.tick(timeDelta);
+
+		const frame = this.#animation.getCurrentFrame();
+		if (frame) {
+			const imageRect = frame.getImageRect();
+			this.#sprite.setImage(frame.getImage());
+			this.#sprite.setImageRect(imageRect);
+			this.setContentSize(Vector2.create(imageRect.size.x, imageRect.size.y));
+		}
+
+		super.tick(timeDelta);
+	}
+
+	//==============================================================================
 	// 클립 등록.
 	//==============================================================================
 	/**
@@ -73,18 +94,21 @@ export class Actor extends WorldNode {
 
 	//==============================================================================
 	// 클립 재생.
-	// - 같은 클립이 이미 재생중이면 재시작하지 않음.
+	// - 같은 클립이 이미 재생중이면 재시작하지 않음 (onComplete 만 갱신).
+	// - onComplete: 비루프 클립이 끝났을 때 호출되는 콜백.
 	//==============================================================================
 	/**
 	 * @param { string } name
+	 * @param { Function | null } onComplete
 	 */
-	play(name) {
+	play(name, onComplete = null) {
 		const clip = this.#clips.get(name);
 		if (!clip) {
 			console.warn(`[Actor] 클립 없음: ${name}`);
 			return;
 		}
 		if (this.#currentClipName === name && this.#animation.isPlaying()) {
+			this.#animation.setOnComplete(onComplete);
 			return;
 		}
 		this.#currentClipName = name;
@@ -95,6 +119,7 @@ export class Actor extends WorldNode {
 		if (duration > 0 && frameCount > 0) {
 			this.#animation.setAnimationSpeed(frameCount / duration);
 		}
+		this.#animation.setOnComplete(onComplete);
 		this.#animation.play();
 	}
 
@@ -116,26 +141,5 @@ export class Actor extends WorldNode {
 	 */
 	getSprite() {
 		return this.#sprite;
-	}
-
-	//==============================================================================
-	// 갱신: 애니메이션 진행 + 현재 프레임을 스프라이트에 반영.
-	//==============================================================================
-	/**
-	 * @override
-	 * @param { number } timeDelta
-	 */
-	tick(timeDelta) {
-		this.#animation.tick(timeDelta);
-
-		const frame = this.#animation.getCurrentFrame();
-		if (frame) {
-			const imageRect = frame.getImageRect();
-			this.#sprite.setImage(frame.getImage());
-			this.#sprite.setImageRect(imageRect);
-			this.setContentSize(Vector2.create(imageRect.size.x, imageRect.size.y));
-		}
-
-		super.tick(timeDelta);
 	}
 }

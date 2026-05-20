@@ -9,14 +9,17 @@ import { Engine, EngineConfiguration } from "../libs/vanilla.js/src/core/engine.
 import { Graphic } from "../libs/vanilla.js/src/core/graphic.js";
 import { ViewScaleMode } from "../libs/vanilla.js/src/core/viewmanager.js";
 import { GameScene } from "../libs/vanilla.js/src/game/gamescene.js";
-import { Alucard } from "./actor/alucard.js";
+// import { Alucard } from "./actor/alucard.js";
+import { SomaCruz } from "./actor/somacruz.js";
 
 
 //==============================================================================
 // 메인 씬.
 //==============================================================================
 class MainScene extends GameScene {
-	/** @private @type { Alucard } */ #alucard;
+	// /** @private @type { Alucard } */ #alucard;
+	/** @private @type { SomaCruz } */ #soma;
+	/** @private @type { CanvasPattern | null } */ #checkerPattern;
 
 	//==============================================================================
 	// 생성자.
@@ -26,6 +29,7 @@ class MainScene extends GameScene {
 		this.setViewScaleMode(ViewScaleMode.stretchHeight);
 		this.setSceneBackgroundColor(Color.black());
 		this.setLoadingMinDurationMs(0);
+		this.#checkerPattern = null;
 	}
 
 	//==============================================================================
@@ -37,8 +41,10 @@ class MainScene extends GameScene {
 	async loadAssets() {
 		await super.loadAssets();
 
-		this.#alucard = new Alucard();
-		await this.#alucard.load();
+		// this.#alucard = new Alucard();
+		// await this.#alucard.load();
+		this.#soma = new SomaCruz();
+		await this.#soma.load();
 	}
 
 	//==============================================================================
@@ -53,9 +59,15 @@ class MainScene extends GameScene {
 		// 도트 스프라이트 — 이미지 스무딩 끄기.
 		const graphic = engine.getGraphic();
 		graphic.setImageSmoothingEnabled(false);
-		// 게임 영역(256x240) 안 바닥 근처에 배치. 피봇이 bottomCenter 라 발끝 기준.
-		this.#alucard.setLocalPosition(Vector2.create(128, 220));
-		this.getRoot().addChild(this.#alucard);
+		// 방 경계: 256x240 게임영역, 바닥 y=220 (발끝 기준).
+		// this.#alucard.setRoomBounds(16, 240, 220);
+		// this.#alucard.setLocalPosition(Vector2.create(128, 220));
+		this.#soma.setRoomBounds(16, 240, 220);
+		this.#soma.setLocalPosition(Vector2.create(128, 220));
+
+		const root = this.getRoot();
+		// root.addChild(this.#alucard);
+		root.addChild(this.#soma);
 	}
 
 	//==============================================================================
@@ -69,6 +81,25 @@ class MainScene extends GameScene {
 	}
 
 	//==============================================================================
+	// 갱신: 알루카드 입력 처리.
+	//==============================================================================
+	/**
+	 * @override
+	 * @param { number } timeDelta
+	 */
+	tick(timeDelta) {
+		// if (this.#alucard) {
+		// 	const inputManager = this.getEngine().getInputManager();
+		// 	this.#alucard.handleInput(inputManager);
+		// }
+		if (this.#soma) {
+			const inputManager = this.getEngine().getInputManager();
+			this.#soma.handleInput(inputManager);
+		}
+		super.tick(timeDelta);
+	}
+
+	//==============================================================================
 	// 출력.
 	//==============================================================================
 	/**
@@ -79,12 +110,24 @@ class MainScene extends GameScene {
 		const engine = this.getEngine();
 		const canvasRenderingContext = graphic.getCanvasRenderingContext();
 		const viewManager = engine.getViewManager();
-		const viewSize = viewManager.getViewSize();
-
-		// 게임 영역 칠하기.
 		viewManager.applyViewRect(canvasRenderingContext);
-		graphic.setFillColor(Color.createFromHEX("#ffffff"));
-		graphic.drawRect(Rect.create(0, 0, 256, 240));
+
+		// 2x2 체커보드 패턴 (1픽셀 단위 회색/흰색).
+		if (!this.#checkerPattern) {
+			const off = new System.OffscreenCanvas(2, 2);
+			const oc = off.getContext("2d");
+			oc.fillStyle = "#a0a0a0";
+			oc.fillRect(0, 0, 1, 1);
+			oc.fillRect(1, 1, 1, 1);
+			oc.fillStyle = "#ffffff";
+			oc.fillRect(1, 0, 1, 1);
+			oc.fillRect(0, 1, 1, 1);
+			this.#checkerPattern = canvasRenderingContext.createPattern(off, "repeat");
+		}
+
+		// 방(게임영역 256x240) 바닥 체커보드.
+		canvasRenderingContext.fillStyle = this.#checkerPattern;
+		canvasRenderingContext.fillRect(0, 0, 256, 240);
 
 		super.draw(graphic);
 	}
